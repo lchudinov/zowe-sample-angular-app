@@ -13,6 +13,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export interface HelloResponseBody {
   _objectType: string,
@@ -39,6 +40,25 @@ export class HelloService {
       "messageFromClient": text
     }
     return this.http.post<HelloResponseBody>(this.destination, requestBody);
+  }
+  
+  get(key: string): Observable<string> {
+    let uri = this.destination;
+    if (!uri.endsWith('/')) {
+      uri += '/';
+    }
+    uri += key;
+    return this.http.get<{ key: string, value: string, ok: boolean }>(uri).pipe(map(body => body.value));
+  }
+
+  set(key: string, value: string): Observable<boolean> {
+    let uri = this.destination;
+    if (!uri.endsWith('/')) {
+      uri += '/';
+    }
+    uri += key;
+    return this.http.put<{ key: string, value: string, ok: boolean }>(uri, { value })
+      .pipe(map(body => body.ok));
   }
 
 }

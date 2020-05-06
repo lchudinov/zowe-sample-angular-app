@@ -16,6 +16,10 @@ import { Router } from "express-serve-static-core";
 const express = require('express');
 const Promise = require('bluebird');
 const obfuscator = require ('zlux-shared/src/obfuscator/htmlObfuscator.js');
+interface Storage {
+  get(key: string): Promise<any>;
+  set(key: string, value: any): Promise<void>;
+}
 
 class HelloWorldDataservice{
   private context: any;
@@ -45,6 +49,24 @@ class HelloWorldDataservice{
         from client`
       }        
       res.status(200).json(responseBody);
+    });
+    router.put('/:key',  (req: Request, res: Response) => {
+      const key = req.params.key;
+      const {value} = req.body;
+      const storage = this.context.storage as Storage;
+      console.log(`got set(${key}, ${value})`);
+      storage.set(key, value).then(() => {
+        const ok = true;
+        res.status(200).json({key, value, ok});
+      });
+    });
+    router.get('/:key', (req: Request, res: Response) => {
+      const key = req.params.key;
+      const storage = this.context.storage as Storage;
+      const value = storage.get(key).then(value => {
+        const ok = true;
+        res.status(200).json({key, value, ok});
+      });
     });
     this.router = router;
   }

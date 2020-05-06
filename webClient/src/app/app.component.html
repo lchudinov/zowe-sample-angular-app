@@ -81,6 +81,20 @@
       <textarea class="server-response" placeholder="Response" readonly
                 i18n-placeholder="@@appComponentResponse" >{{serverResponseMessage}}</textarea>
     </div>
+    <div class="test-storage">
+      <div class="bigger-bold-text">Storage Test</div>
+      <div class="key-value">
+        <span>key:</span><input [(ngModel)]="key">
+      </div>
+      <div class="key-value">
+        <span>value:</span><input [(ngModel)]="value">
+      </div>
+      <div>status: {{status}}</div>
+      <div class="controls">
+        <zlux-button type="button" (click)="set()">Set</zlux-button>
+        <zlux-button type="button" (click)="get()">Get</zlux-button>
+      </div>
+    </div>
   </div>
 </div>
 <zlux-popup-manager>

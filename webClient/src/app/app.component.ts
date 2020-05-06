@@ -55,6 +55,10 @@ export class AppComponent {
   helloText = '';
   serverResponseMessage: string;
   private menuItems: ContextMenuItem[];
+  
+  key: string;
+  value: string;
+  status: string = 'ready';
 
   constructor(
     public locale: LocaleService,
@@ -352,6 +356,20 @@ export class AppComponent {
       this.windowActions.spawnContextMenu(event.clientX, event.clientY, this.menuItems, true);
     }
     return false;
+  }
+  
+  get(): void {
+    this.status = 'wait...';
+    this.helloService.get(this.key).subscribe(value => {this.value = value; this.status = 'ok'}, err => this.status = 'failed');
+  }
+  
+  set(): void {
+    this.status = 'wait...';
+    this.helloService.set(this.key, this.value).subscribe(() => {this.clear(); this.status = 'ok'}, err => this.status = 'failed');
+  }
+  
+  clear(): void {
+    this.value = '';
   }
   
   
