@@ -191,7 +191,6 @@ export class AppComponent {
     } catch (e) {
       //this.parameters was not JSON
     }
-    if (this.targetAppId) {
       let message = '';
       /* 
          With ZLUX, there's a global called ZoweZLUX which holds useful tools. So, a site
@@ -202,37 +201,49 @@ export class AppComponent {
       */
       let dispatcher = ZoweZLUX.dispatcher;
       let pluginManager = ZoweZLUX.pluginManager;
-      let plugin = pluginManager.getPlugin(this.targetAppId);
-      if (plugin) {
-        let type = dispatcher.constants.ActionType[this.actionType];
-        let mode = dispatcher.constants.ActionTargetMode[this.targetMode];
-
-        if (type != undefined && mode != undefined) {
-          let actionTitle = 'Launch app from sample app';
-          let actionID = 'org.zowe.zlux.sample.launch';
-          let argumentFormatter = {data: {op:'deref',source:'event',path:['data']}};
-          /*Actions can be made ahead of time, stored and registered at startup, but for example purposes we are making one on-the-fly.
-            Actions are also typically associated with Recognizers, which execute an Action when a certain pattern is seen in the running App.
-          */
-          let action = dispatcher.makeAction(actionID, actionTitle, mode,type,this.targetAppId,argumentFormatter);
-          let argumentData = {'data':(parameters ? parameters : this.parameters)};
-          this.log.info((message = this.translation.translate('request_succeeded'))); // App request succeeded
-          this.callStatus = message;
-          /*Just because the Action is invoked does not mean the target App will accept it. We've made an Action on the fly,
-            So the data could be in any shape under the "data" attribute and it is up to the target App to take action or ignore this request*/
-          dispatcher.invokeAction(action,argumentData);
-        } else {
-          this.log.warn((message = 'Invalid target mode or action type specified'));        
+      if (this.targetAppId) {
+        const plugin = pluginManager.getPlugin(this.targetAppId);
+        if (!plugin) {
+          this.popupManager.reportError(
+            ZluxErrorSeverity.WARNING,
+            this.translation.translate('invalid_plugin_identifier'),
+            `${this.translation.translate('no_plugin_found_for_identifier')} ${this.targetAppId}`, popupOptions);
         }
-      } else {
-        this.popupManager.reportError(
-          ZluxErrorSeverity.WARNING,
-          this.translation.translate('invalid_plugin_identifier'), // 
-          `${this.translation.translate('no_plugin_found_for_identifier')} ${this.targetAppId}`, popupOptions);
       }
-      
+      let type = dispatcher.constants.ActionType[this.actionType];
+      let mode = dispatcher.constants.ActionTargetMode[this.targetMode];
+      if (type != undefined && mode != undefined) {
+        let actionTitle = 'Launch app from sample app';
+        let actionID = 'org.zowe.zlux.sample.launch';
+        let argumentFormatter = {data: {op:'deref',source:'event',path:['data']}};
+        /*Actions can be made ahead of time, stored and registered at startup, but for example purposes we are making one on-the-fly.
+          Actions are also typically associated with Recognizers, which execute an Action when a certain pattern is seen in the running App.
+        */
+        let action = dispatcher.makeAction(actionID, actionTitle, mode,type,this.targetAppId,argumentFormatter);
+        let argumentData = this.targetAppId ? {'data':(parameters ? parameters : this.parameters)} : (parameters ? parameters : this.parameters);
+        this.log.info((message = this.translation.translate('request_succeeded'))); // App request succeeded
+        this.callStatus = message;
+        /*Just because the Action is invoked does not mean the target App will accept it. We've made an Action on the fly,
+          So the data could be in any shape under the "data" attribute and it is up to the target App to take action or ignore this request*/
+        dispatcher.invokeAction(action,argumentData).catch(
+          e => {
+            let message: string;
+            if (typeof e === 'string') {
+              message = e;
+            } else if (e instanceof Error) {
+              message = e.message;
+            } else {
+              message = JSON.stringify(e);
+            }
+            this.popupManager.reportError(
+              ZluxErrorSeverity.WARNING, 'Unable to launch app', message, popupOptions
+            );
+          }
+        );
+      } else {
+        this.log.warn((message = 'Invalid target mode or action type specified'));        
+      }
       this.callStatus = message;
-    }
   }
 
   generateTestMenuItems(translator: TranslationService): void {
